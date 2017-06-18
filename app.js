@@ -19,14 +19,18 @@
 const express = require('express');
 const http = require('http');
 const app = express();
-var options = {
+var options_outbound = {
 	host: 'realtime.portauthority.org',
     path: '/bustime/api/v3/getpredictions?key=ZvG9KVepvvzYaDkbAUuP3vyjF&stpid=8199&rtpidatafeed=Port%20Authority%20Bus&format=json'
 };
+var options_inbound = {
+	host: 'realtime.portauthority.org',
+    path: '/bustime/api/v3/getpredictions?key=ZvG9KVepvvzYaDkbAUuP3vyjF&stpid=8191&rtpidatafeed=Port%20Authority%20Bus&format=json'
+};
 var result = "Hello, Google Cloud!";
-app.get('/', (request, response) => {
+app.get('/outbound', (request, response) => {
 
-	var requestTimeAndRoute = http.request(options, (res) => {
+	var requestTimeAndRoute = http.request(options_outbound, (res) => {
 		var rawData = '';
 		res.on('data', (chunk) => {
 			rawData += chunk;
@@ -49,6 +53,33 @@ app.get('/', (request, response) => {
 	requestTimeAndRoute.end();
 	
 });
+
+app.get('/inbound', (request, response) => {
+
+	var requestTimeAndRoute = http.request(options_inbound, (res) => {
+		var rawData = '';
+		res.on('data', (chunk) => {
+			rawData += chunk;
+		});
+		res.on('end', () => {
+			try {
+				result = processData(rawData);
+				console.log("the result is " + result);
+				response.status(200).send(result).end();
+			} catch (e) {
+				console.error(e.message);
+			}
+		});
+
+	});
+
+	requestTimeAndRoute.on('error', (e) => {
+		console.log(e.message);
+	});
+	requestTimeAndRoute.end();
+	
+});
+
 function processData(rawData) {
 	const parsedData = JSON.parse(rawData);
 	var route = parsedData['bustime-response']['prd'][0]['rt'];
